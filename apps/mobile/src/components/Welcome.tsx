@@ -1,49 +1,50 @@
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { DISCLAIMER, VERDICT_HELP } from '@/lib/copy';
-import { VERDICT_STYLE } from './ResultView';
-
-const COLORS: Record<string, string> = {
-  Halal: VERDICT_STYLE.halal.color,
-  Haram: VERDICT_STYLE.haram.color,
-  Mushbooh: VERDICT_STYLE.mushbooh.color,
-};
+import { color, font, space, type, verdictColor } from '@/theme';
+import { Button } from './ui';
 
 /** Shown on first launch, and again whenever DISCLAIMER_VERSION changes. */
 export function Welcome({ onAccept }: { onAccept: () => void }) {
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.title}>Welcome to Permito</Text>
-        <Text style={styles.body}>Scan a food barcode and Permito checks its ingredients. Every product gets one of three verdicts:</Text>
-        {VERDICT_HELP.map((v) => (
-          <View key={v.label} style={styles.row}>
-            <Text style={[styles.pill, { backgroundColor: COLORS[v.label] }]}>{v.label}</Text>
-            <Text style={styles.rowText}>{v.text}</Text>
-          </View>
-        ))}
-        <Text style={styles.heading}>Please keep in mind</Text>
-        <Text style={styles.body}>{DISCLAIMER}</Text>
-        <Text style={styles.body}>
-          Product data comes from Open Food Facts, a database anyone can edit, so it can be missing or out of date. Always check the pack.
+        <Text style={styles.wordmark} accessibilityRole="header">
+          Permito
         </Text>
+        <Text style={type.body}>Scan a food barcode and Permito reads the ingredients for you. Every product gets one of three verdicts.</Text>
+
+        <View style={styles.verdicts}>
+          {VERDICT_HELP.map((v) => (
+            <View key={v.key} style={[styles.verdict, { backgroundColor: verdictColor[v.key].tint, borderLeftColor: verdictColor[v.key].fg }]}>
+              <Text style={[styles.verdictWord, { color: verdictColor[v.key].fg }]}>{v.label}</Text>
+              <Text style={type.body}>{v.text}</Text>
+            </View>
+          ))}
+        </View>
+
+        <View style={styles.note}>
+          <Text style={type.heading}>Before you start</Text>
+          <Text style={type.body}>{DISCLAIMER}</Text>
+          <Text style={type.body}>
+            Product data comes from Open Food Facts, which anyone can edit, so it can be missing or out of date. Always check the pack.
+          </Text>
+        </View>
       </ScrollView>
-      <Pressable style={styles.button} onPress={onAccept} accessibilityRole="button">
-        <Text style={styles.buttonText}>I understand</Text>
-      </Pressable>
+      <View style={styles.footer}>
+        <Button label="I understand" onPress={onAccept} />
+      </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#fff' },
-  container: { padding: 24, gap: 14 },
-  title: { fontSize: 28, fontWeight: '800', marginTop: 16 },
-  heading: { fontSize: 18, fontWeight: '700', marginTop: 8 },
-  body: { fontSize: 16, color: '#333', lineHeight: 22 },
-  row: { flexDirection: 'row', gap: 10, alignItems: 'flex-start' },
-  pill: { color: '#fff', fontSize: 13, fontWeight: '700', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, overflow: 'hidden', minWidth: 78, textAlign: 'center' },
-  rowText: { flex: 1, fontSize: 15, color: '#444', lineHeight: 21 },
-  button: { backgroundColor: '#1b7f4b', borderRadius: 12, margin: 24, paddingVertical: 16, alignItems: 'center' },
-  buttonText: { color: '#fff', fontSize: 17, fontWeight: '700' },
+  safe: { flex: 1, backgroundColor: color.canvas },
+  container: { padding: space.xl, gap: space.xl },
+  wordmark: { fontFamily: font.heavy, fontSize: 44, lineHeight: 50, color: color.pine, letterSpacing: -1, marginTop: space.l },
+  verdicts: { gap: space.s },
+  verdict: { borderLeftWidth: 6, borderRadius: 4, padding: space.l, gap: space.xs },
+  verdictWord: { fontFamily: font.heavy, fontSize: 22, lineHeight: 28 },
+  note: { gap: space.m },
+  footer: { paddingHorizontal: space.xl, paddingVertical: space.l },
 });

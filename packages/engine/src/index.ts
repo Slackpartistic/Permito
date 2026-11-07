@@ -7,3 +7,5 @@ export { createEvaluator } from './evaluate';
 export type { Confidence, Evaluator, OffIngredient, ProductInput, Reason, Result, Verdict } from './evaluate';
 export { applyCorrection } from './corrections';
 export type { Correction, CorrectionsFile } from './corrections';
+export { annotateIngredients } from './annotate';
+export type { Segment } from './annotate';

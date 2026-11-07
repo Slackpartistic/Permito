@@ -1,11 +1,33 @@
 import { useCallback, useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { CameraView, useCameraPermissions, type BarcodeScanningResult } from 'expo-camera';
 import { router, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { isValidBarcode } from '@halal-o/off-client';
+import { Button, TextLink } from '@/components/ui';
+import { color, font, space, TOUCH, type } from '@/theme';
 
 const BARCODE_TYPES = ['ean13', 'ean8', 'upc_a', 'upc_e'] as const;
+
+function HeaderButton({ label, onPress }: { label: string; onPress: () => void }) {
+  return (
+    <Pressable onPress={onPress} accessibilityRole="button" hitSlop={6} style={({ pressed }) => [styles.headerButton, pressed && styles.headerButtonPressed]}>
+      <Text style={styles.headerButtonText}>{label}</Text>
+    </Pressable>
+  );
+}
+
+/** Corner brackets showing where to hold the barcode. */
+function Reticle() {
+  return (
+    <View style={styles.reticle} pointerEvents="none">
+      <View style={[styles.corner, styles.tl]} />
+      <View style={[styles.corner, styles.tr]} />
+      <View style={[styles.corner, styles.bl]} />
+      <View style={[styles.corner, styles.br]} />
+    </View>
+  );
+}
 
 export default function ScanScreen() {
   const [permission, requestPermission] = useCameraPermissions();
@@ -33,85 +55,137 @@ export default function ScanScreen() {
     if (isValidBarcode(code)) open(code);
   };
 
+  const valid = isValidBarcode(typed);
+
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Permito</Text>
-        <View style={styles.headerLinks}>
-          <Text style={styles.headerLink} accessibilityRole="link" onPress={() => router.push('/history')}>
-            History
-          </Text>
-          <Text style={styles.headerLink} accessibilityRole="link" onPress={() => router.push('/about')}>
-            About
-          </Text>
-        </View>
-      </View>
-      <Text style={styles.subtitle}>Point the camera at a product barcode</Text>
+    <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <View style={styles.camera}>
+        {permission?.granted && focused ? (
+          <CameraView
+            style={StyleSheet.absoluteFill}
+            facing="back"
+            barcodeScannerSettings={{ barcodeTypes: [...BARCODE_TYPES] }}
+            onBarcodeScanned={onScanned}
+          />
+        ) : null}
 
-      <View style={styles.cameraBox}>
-        {!permission ? null : permission.granted ? (
-          focused && (
-            <CameraView
-              style={StyleSheet.absoluteFill}
-              facing="back"
-              barcodeScannerSettings={{ barcodeTypes: [...BARCODE_TYPES] }}
-              onBarcodeScanned={onScanned}
-            />
-          )
-        ) : (
-          <View style={styles.permission}>
-            <Text style={styles.permissionText}>Permito needs the camera to scan barcodes.</Text>
-            {permission.canAskAgain ? (
-              <Pressable style={styles.button} onPress={requestPermission}>
-                <Text style={styles.buttonText}>Allow camera</Text>
-              </Pressable>
-            ) : (
-              <Text style={styles.permissionText}>Turn on camera access for Permito in Settings.</Text>
-            )}
+        <SafeAreaView edges={['top']} style={styles.overlay}>
+          <View style={styles.header}>
+            <Text style={styles.wordmark} accessibilityRole="header">
+              Permito
+            </Text>
+            <View style={styles.headerButtons}>
+              <HeaderButton label="History" onPress={() => router.push('/history')} />
+              <HeaderButton label="About" onPress={() => router.push('/about')} />
+            </View>
           </View>
-        )}
+
+          {permission && !permission.granted ? (
+            <View style={styles.permission}>
+              <Text style={styles.permissionTitle}>Scan barcodes with your camera</Text>
+              <Text style={styles.permissionBody}>
+                Permito only uses the camera to read barcodes. Nothing is recorded.
+              </Text>
+              {permission.canAskAgain ? (
+                <Button label="Allow camera" onPress={requestPermission} style={styles.permissionButton} />
+              ) : (
+                <Text style={styles.permissionBody}>Camera access is off. Turn it on for Permito in Settings.</Text>
+              )}
+            </View>
+          ) : (
+            <View style={styles.aim}>
+              <Reticle />
+              <Text style={styles.hint}>Hold the barcode inside the frame</Text>
+            </View>
+          )}
+        </SafeAreaView>
       </View>
 
-      <View style={styles.manual}>
-        <TextInput
-          style={styles.input}
-          value={typed}
-          onChangeText={(t) => setTyped(t.replace(/\D/g, ''))}
-          placeholder="Or type the barcode number"
-          keyboardType="number-pad"
-          returnKeyType="search"
-          maxLength={14}
-          onSubmitEditing={() => isValidBarcode(typed) && open(typed)}
-        />
-        <Pressable
-          style={[styles.button, !isValidBarcode(typed) && styles.buttonDisabled]}
-          disabled={!isValidBarcode(typed)}
-          onPress={() => open(typed)}
-        >
-          <Text style={styles.buttonText}>Check</Text>
-        </Pressable>
-      </View>
-      <Text style={styles.link} accessibilityRole="link" onPress={() => router.push('/manual')}>
-        No barcode? Type the ingredients instead
-      </Text>
-    </SafeAreaView>
+      <SafeAreaView edges={['bottom']} style={styles.sheet}>
+        <Text style={type.bodyStrong} nativeID="barcodeLabel">
+          Or type the barcode number
+        </Text>
+        <View style={styles.row}>
+          <TextInput
+            style={styles.input}
+            value={typed}
+            onChangeText={(t) => setTyped(t.replace(/\D/g, ''))}
+            placeholder="e.g. 5000159407236"
+            placeholderTextColor={color.inkMuted}
+            keyboardType="number-pad"
+            returnKeyType="search"
+            maxLength={14}
+            accessibilityLabelledBy="barcodeLabel"
+            accessibilityLabel="Barcode number"
+            onSubmitEditing={() => valid && open(typed)}
+          />
+          <Button label="Check" onPress={() => open(typed)} disabled={!valid} style={styles.check} />
+        </View>
+        <TextLink onPress={() => router.push('/manual')}>No barcode? Type the ingredients</TextLink>
+      </SafeAreaView>
+    </KeyboardAvoidingView>
   );
 }
 
+const C = 28; // reticle corner length
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff', paddingHorizontal: 16 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 },
-  title: { fontSize: 28, fontWeight: '700' },
-  headerLinks: { flexDirection: 'row', gap: 12 },
-  headerLink: { color: '#1a5fb4', fontSize: 16, fontWeight: '600', padding: 4 },
-  subtitle: { fontSize: 15, color: '#555', marginTop: 4, marginBottom: 16 },
-  cameraBox: { flex: 1, borderRadius: 16, overflow: 'hidden', backgroundColor: '#111' },
-  permission: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 16 },
-  permissionText: { color: '#fff', fontSize: 16, textAlign: 'center' },
-  manual: { flexDirection: 'row', gap: 8, paddingVertical: 16 },
-  input: { flex: 1, borderWidth: 1, borderColor: '#ccc', borderRadius: 10, paddingHorizontal: 12, fontSize: 16, height: 48 },
-  button: { backgroundColor: '#1b7f4b', borderRadius: 10, paddingHorizontal: 18, justifyContent: 'center', height: 48 },
-  buttonDisabled: { opacity: 0.4 },
-  buttonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
-  link: { color: '#1a5fb4', fontSize: 15, textAlign: 'center', paddingBottom: 16 },
+  screen: { flex: 1, backgroundColor: color.ink },
+  camera: { flex: 1, backgroundColor: color.ink },
+  overlay: { flex: 1 },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: space.l, paddingTop: space.s },
+  wordmark: { fontFamily: font.heavy, fontSize: 26, color: color.paper, letterSpacing: -0.5 },
+  headerButtons: { flexDirection: 'row', gap: space.s },
+  headerButton: {
+    minHeight: TOUCH,
+    paddingHorizontal: space.m,
+    borderRadius: TOUCH / 2,
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.14)',
+  },
+  headerButtonPressed: { backgroundColor: 'rgba(255,255,255,0.28)' },
+  headerButtonText: { fontFamily: font.bold, fontSize: 15, color: color.paper },
+  aim: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: space.l },
+  reticle: { width: '78%', aspectRatio: 1.6 },
+  corner: { position: 'absolute', width: C, height: C, borderColor: color.paper },
+  tl: { top: 0, left: 0, borderTopWidth: 4, borderLeftWidth: 4, borderTopLeftRadius: 10 },
+  tr: { top: 0, right: 0, borderTopWidth: 4, borderRightWidth: 4, borderTopRightRadius: 10 },
+  bl: { bottom: 0, left: 0, borderBottomWidth: 4, borderLeftWidth: 4, borderBottomLeftRadius: 10 },
+  br: { bottom: 0, right: 0, borderBottomWidth: 4, borderRightWidth: 4, borderBottomRightRadius: 10 },
+  hint: {
+    fontFamily: font.medium,
+    fontSize: 16,
+    color: color.paper,
+    backgroundColor: 'rgba(16,35,27,0.6)',
+    paddingHorizontal: space.m,
+    paddingVertical: space.xs,
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+  permission: { flex: 1, justifyContent: 'center', paddingHorizontal: space.xl, gap: space.m },
+  permissionTitle: { fontFamily: font.bold, fontSize: 24, lineHeight: 30, color: color.paper },
+  permissionBody: { fontFamily: font.regular, fontSize: 17, lineHeight: 25, color: '#D5E0DA' },
+  permissionButton: { marginTop: space.s, alignSelf: 'flex-start', paddingHorizontal: space.xl },
+  sheet: {
+    backgroundColor: color.canvas,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    marginTop: -20,
+    paddingHorizontal: space.l,
+    paddingTop: space.l,
+    gap: space.s,
+  },
+  row: { flexDirection: 'row', gap: space.s },
+  input: {
+    flex: 1,
+    minHeight: 52,
+    backgroundColor: color.paper,
+    borderWidth: 1.5,
+    borderColor: color.line,
+    borderRadius: 14,
+    paddingHorizontal: space.m,
+    fontFamily: font.regular,
+    fontSize: 18,
+    color: color.ink,
+  },
+  check: { paddingHorizontal: space.xl },
 });

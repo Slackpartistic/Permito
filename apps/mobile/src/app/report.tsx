@@ -1,9 +1,19 @@
 import { useState } from 'react';
 import { Alert, KeyboardAvoidingView, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
+import { Button } from '@/components/ui';
+import { SUPPORT_EMAIL } from '@/lib/config';
 import { emailUrl, githubIssueUrl, PROBLEMS, type Problem, type Report } from '@/lib/report';
+import { color, font, space, TOUCH, type } from '@/theme';
 
 type Params = { barcode?: string; product?: string; verdict?: string; ingredients?: string; problem?: string };
+
+const PLACEHOLDER: Record<Problem, string> = {
+  'Verdict looks wrong': 'What should it say, and why? For example: the pack says the E471 is plant-based.',
+  'Halal logo on pack': 'Which certifier is on the logo? For example: HMC or HFA.',
+  'Ingredients are out of date': 'What does the ingredient list on the pack say now?',
+  'Product is missing': 'Product name, brand, and the ingredients from the pack.',
+};
 
 /** Report a wrong verdict, a halal logo, stale ingredients or a missing product (docs/SPEC.md §2.4). */
 export default function ReportScreen() {
@@ -26,7 +36,7 @@ export default function ReportScreen() {
     try {
       await Linking.openURL(url);
     } catch {
-      Alert.alert(`Couldn't open ${what}`, 'You can also email permito.support@gmail.com directly.');
+      Alert.alert(`Couldn't open ${what}`, `Email ${SUPPORT_EMAIL} instead.`);
     }
   };
 
@@ -34,70 +44,96 @@ export default function ReportScreen() {
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
         {report.product || report.barcode ? (
-          <Text style={styles.meta}>{[report.product, report.barcode && `Barcode ${report.barcode}`].filter(Boolean).join(' · ')}</Text>
+          <View>
+            {report.product ? <Text style={type.heading}>{report.product}</Text> : null}
+            {report.barcode ? <Text style={type.small}>Barcode {report.barcode}</Text> : null}
+          </View>
         ) : null}
 
-        <Text style={styles.label}>What's the problem?</Text>
-        <View style={styles.options} accessibilityRole="radiogroup">
-          {PROBLEMS.map((x) => (
-            <Pressable
-              key={x}
-              style={[styles.option, x === problem && styles.optionOn]}
-              onPress={() => setProblem(x)}
-              accessibilityRole="radio"
-              accessibilityState={{ checked: x === problem }}
-            >
-              <Text style={[styles.optionText, x === problem && styles.optionTextOn]}>{x}</Text>
-            </Pressable>
-          ))}
+        <View style={styles.section}>
+          <Text style={type.bodyStrong} nativeID="problemLabel">
+            What's wrong?
+          </Text>
+          <View style={styles.options} accessibilityRole="radiogroup" accessibilityLabelledBy="problemLabel">
+            {PROBLEMS.map((x, i) => {
+              const on = x === problem;
+              return (
+                <Pressable
+                  key={x}
+                  style={[styles.option, i > 0 && styles.optionDivider]}
+                  onPress={() => setProblem(x)}
+                  accessibilityRole="radio"
+                  accessibilityState={{ checked: on }}
+                >
+                  <View style={[styles.radio, on && styles.radioOn]}>{on ? <View style={styles.radioDot} /> : null}</View>
+                  <Text style={[type.body, on && styles.optionOn]}>{x}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
         </View>
 
-        <Text style={styles.label}>Details</Text>
-        <TextInput
-          style={styles.input}
-          value={details}
-          onChangeText={setDetails}
-          placeholder={
-            problem === 'Halal logo on pack'
-              ? 'Which certifier? e.g. HMC, HFA'
-              : 'What should it say, and why? e.g. "The E471 is labelled as plant-based."'
-          }
-          multiline
-          textAlignVertical="top"
-        />
-        <Text style={styles.hint}>Photos of the ingredient list and any halal logo help the most. You can add them in the next step.</Text>
+        <View style={styles.section}>
+          <Text style={type.bodyStrong} nativeID="detailsLabel">
+            Details
+          </Text>
+          <TextInput
+            style={styles.input}
+            value={details}
+            onChangeText={setDetails}
+            placeholder={PLACEHOLDER[problem]}
+            placeholderTextColor={color.inkMuted}
+            accessibilityLabelledBy="detailsLabel"
+            accessibilityLabel="Details"
+            multiline
+            textAlignVertical="top"
+          />
+          <Text style={type.small}>Photos of the ingredient list and any halal logo help most. You can attach them in the next step.</Text>
+        </View>
 
-        <Pressable style={[styles.button, !ready && styles.disabled]} disabled={!ready} onPress={() => open(emailUrl(report), 'your email app')}>
-          <Text style={styles.buttonText}>Send by email</Text>
-        </Pressable>
-        <Pressable
-          style={[styles.button, styles.secondary, !ready && styles.disabled]}
-          disabled={!ready}
-          onPress={() => open(githubIssueUrl(report), 'GitHub')}
-        >
-          <Text style={[styles.buttonText, styles.secondaryText]}>Report on GitHub</Text>
-        </Pressable>
-        <Text style={styles.hint}>Every report is checked by hand. If we change a verdict, it shows in your History.</Text>
+        <View style={styles.section}>
+          <Button
+            label="Send by email"
+            disabled={!ready}
+            onPress={() => open(emailUrl(report), 'your email app')}
+            accessibilityHint={ready ? undefined : 'Add details first'}
+          />
+          <Button
+            label="Report on GitHub"
+            variant="secondary"
+            disabled={!ready}
+            onPress={() => open(githubIssueUrl(report), 'GitHub')}
+            accessibilityHint={ready ? undefined : 'Add details first'}
+          />
+          {!ready ? <Text style={type.small}>Add details to send your report.</Text> : null}
+        </View>
+        <Text style={type.small}>We read every report. If we change a verdict, you'll see it in History.</Text>
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: '#fff' },
-  container: { padding: 16, gap: 12 },
-  meta: { fontSize: 14, color: '#666' },
-  label: { fontSize: 16, fontWeight: '600' },
-  options: { gap: 8 },
-  option: { borderWidth: 1, borderColor: '#ccc', borderRadius: 10, padding: 12 },
-  optionOn: { borderColor: '#1b7f4b', backgroundColor: '#e8f4ed' },
-  optionText: { fontSize: 15 },
-  optionTextOn: { color: '#1b7f4b', fontWeight: '600' },
-  input: { minHeight: 110, borderWidth: 1, borderColor: '#ccc', borderRadius: 10, padding: 12, fontSize: 16 },
-  hint: { fontSize: 13, color: '#777' },
-  button: { backgroundColor: '#1b7f4b', borderRadius: 10, paddingVertical: 14, alignItems: 'center' },
-  secondary: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#1b7f4b' },
-  secondaryText: { color: '#1b7f4b' },
-  disabled: { opacity: 0.4 },
-  buttonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  flex: { flex: 1 },
+  container: { padding: space.l, paddingBottom: space.xxl, gap: space.xl },
+  section: { gap: space.s },
+  options: { backgroundColor: color.paper, borderRadius: 12, paddingHorizontal: space.l },
+  option: { minHeight: TOUCH + 8, flexDirection: 'row', alignItems: 'center', gap: space.m },
+  optionDivider: { borderTopWidth: 1, borderTopColor: color.line },
+  optionOn: { fontFamily: font.bold },
+  radio: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: color.inkMuted, alignItems: 'center', justifyContent: 'center' },
+  radioOn: { borderColor: color.pine },
+  radioDot: { width: 11, height: 11, borderRadius: 6, backgroundColor: color.pine },
+  input: {
+    minHeight: 120,
+    backgroundColor: color.paper,
+    borderWidth: 1.5,
+    borderColor: color.line,
+    borderRadius: 14,
+    padding: space.m,
+    fontFamily: font.regular,
+    fontSize: 17,
+    lineHeight: 24,
+    color: color.ink,
+  },
 });
