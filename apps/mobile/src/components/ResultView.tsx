@@ -1,130 +1,258 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
-import type { Reason, Result, Verdict } from '@halal-o/engine';
+import { annotateIngredients, type Reason, type Result, type Verdict } from '@halal-o/engine';
 import { DISCLAIMER } from '@/lib/copy';
 import { getReference } from '@/lib/engine';
+import { color, font, space, TOUCH, type, verdictColor } from '@/theme';
 
-export const VERDICT_STYLE: Record<Verdict, { label: string; color: string }> = {
-  halal: { label: 'Halal', color: '#1b7f4b' },
-  haram: { label: 'Haram', color: '#b3261e' },
-  mushbooh: { label: 'Mushbooh', color: '#b26a00' },
-  unknown: { label: 'Not enough information', color: '#5f6368' },
-};
+/** Kept for screens that only need a verdict's name and colour. */
+export const VERDICT_STYLE: Record<Verdict, { label: string; color: string }> = Object.fromEntries(
+  Object.entries(verdictColor).map(([k, v]) => [k, { label: v.label, color: v.fg }]),
+) as Record<Verdict, { label: string; color: string }>;
 
+const STRICT = { halal: 0, mushbooh: 1, haram: 2 } as const;
 
-function subtitle(result: Result): string | null {
-  if (result.correction) return `Checked by the Permito team on ${result.correction.reviewed}.`;
-  if (result.certified) return 'Halal label reported on pack. Check the logo is from a certifier you trust.';
-  if (result.verdict === 'unknown') return "We couldn't find an ingredient list for this product.";
-  if (result.verdict === 'halal' && result.confidence !== 'high') return 'Likely halal: check the label.';
-  if (result.verdict === 'mushbooh') return 'Doubtful: the label does not say where some ingredients come from.';
-  return null;
+/** The same ingredient can match several entries (e.g. "pork gelatine" is pork and E428); show it once. */
+interface Finding {
+  ingredientText: string;
+  verdict: Reason['verdict'];
+  rationales: string[];
+  contested: string[];
+  origin?: string;
+  refs: string[];
 }
 
-export function VerdictBadge({ result }: { result: Result }) {
-  const v = VERDICT_STYLE[result.verdict];
-  const sub = subtitle(result);
+function group(reasons: Reason[]): Finding[] {
+  const byText = new Map<string, Finding>();
+  for (const r of reasons) {
+    const key = r.ingredientText.trim().toLowerCase();
+    const f = byText.get(key) ?? { ingredientText: r.ingredientText, verdict: r.verdict, rationales: [], contested: [], refs: [] };
+    if (STRICT[r.verdict] > STRICT[f.verdict]) f.verdict = r.verdict;
+    if (!f.rationales.includes(r.rationale)) f.rationales.push(r.rationale);
+    if (r.contested && !f.contested.includes(r.contested)) f.contested.push(r.contested);
+    if (r.origin) f.origin = r.origin;
+    for (const id of r.refs) if (!f.refs.includes(id)) f.refs.push(id);
+    byText.set(key, f);
+  }
+  return [...byText.values()].sort((a, b) => STRICT[b.verdict] - STRICT[a.verdict]);
+}
+
+const list = (items: string[]) => (items.length <= 1 ? items.join('') : `${items.slice(0, -1).join(', ')} and ${items.at(-1)}`);
+
+function summary(result: Result, findings: Finding[]): string {
+  if (result.correction) return `Checked by the Permito team on ${result.correction.reviewed}.`;
+  if (result.certified) return "Halal logo reported on the pack. Check it's from a certifier you trust.";
+  const haram = findings.filter((f) => f.verdict === 'haram').map((f) => f.ingredientText);
+  const doubtful = findings.filter((f) => f.verdict === 'mushbooh').map((f) => f.ingredientText);
+  switch (result.verdict) {
+    case 'haram':
+      return `Not permissible: ${list(haram)}.`;
+    case 'mushbooh':
+      return `The label doesn't say where ${list(doubtful)} ${doubtful.length === 1 ? 'comes' : 'come'} from.`;
+    case 'unknown':
+      return "We couldn't find an ingredient list for this product.";
+    case 'halal':
+      return result.confidence === 'high'
+        ? 'No problem ingredients found.'
+        : "No problem ingredients found, but some ingredients aren't in our list. Check the label.";
+  }
+}
+
+export function VerdictPanel({ result }: { result: Result }) {
+  const findings = useMemo(() => group(result.reasons.filter((r) => r.verdict !== 'halal')), [result]);
+  const v = verdictColor[result.verdict];
+  const text = summary(result, findings);
   return (
-    <View style={[styles.badge, { backgroundColor: v.color }]} accessibilityRole="header" accessibilityLabel={`Verdict: ${v.label}`}>
-      <Text style={styles.badgeText}>{v.label}</Text>
-      {sub ? <Text style={styles.badgeSub}>{sub}</Text> : null}
+    <View
+      style={[styles.panel, { backgroundColor: v.tint, borderLeftColor: v.fg }]}
+      accessible
+      accessibilityRole="header"
+      accessibilityLabel={`Verdict: ${v.label}. ${text}`}
+    >
+      <Text style={[type.verdict, { color: v.fg }, result.verdict === 'unknown' && styles.verdictLong]}>{v.label}</Text>
+      <Text style={type.body}>{text}</Text>
     </View>
   );
 }
 
-function ReasonCard({ reason }: { reason: Reason }) {
-  const refs = getReference().references;
-  const v = VERDICT_STYLE[reason.verdict];
+/** The ingredient list as printed, with the words behind the verdict marked. */
+export function AnnotatedIngredients({ text, reasons }: { text: string; reasons: Reason[] }) {
+  const segments = useMemo(() => annotateIngredients(text, reasons), [text, reasons]);
+  if (segments.length === 0) return null;
+  const present = new Set(segments.map((s) => s.verdict).filter(Boolean));
   return (
-    <View style={styles.card}>
-      <View style={styles.cardHeader}>
-        <Text style={styles.cardTitle}>{reason.ingredientText}</Text>
-        <Text style={[styles.pill, { backgroundColor: v.color }]}>{v.label}</Text>
+    <View style={styles.section}>
+      <Text style={type.heading}>Ingredients on the pack</Text>
+      <View style={styles.sheet}>
+        <Text style={styles.ingredients} selectable>
+          {segments.map((s, i) =>
+            s.verdict ? (
+              <Text
+                key={i}
+                style={[styles.marked, { backgroundColor: verdictColor[s.verdict].mark }, s.verdict === 'haram' ? styles.markHaram : styles.markDoubt]}
+              >
+                {s.text}
+              </Text>
+            ) : (
+              <Text key={i}>{s.text}</Text>
+            ),
+          )}
+        </Text>
+        {present.size > 0 ? (
+          <View style={styles.legend} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+            {(['haram', 'mushbooh'] as const)
+              .filter((k) => present.has(k))
+              .map((k) => (
+                <View key={k} style={styles.legendItem}>
+                  <Text style={[styles.swatch, { backgroundColor: verdictColor[k].mark }, k === 'haram' ? styles.markHaram : styles.markDoubt]}>
+                    abc
+                  </Text>
+                  <Text style={type.small}>{k === 'haram' ? 'Not permissible' : 'Source unclear'}</Text>
+                </View>
+              ))}
+          </View>
+        ) : null}
       </View>
-      <Text style={styles.body}>{reason.rationale}</Text>
-      {reason.upgradedByVeganLabel ? <Text style={styles.note}>Counted as halal because the pack has a vegan label.</Text> : null}
-      {reason.origin ? <Text style={styles.note}>Source on label: {reason.origin.replace(/_/g, ' ')}.</Text> : null}
-      {reason.contested ? <Text style={styles.note}>Other views: {reason.contested}</Text> : null}
-      {reason.refs.map((id) => {
+    </View>
+  );
+}
+
+function FindingRow({ finding, first }: { finding: Finding; first: boolean }) {
+  const refs = getReference().references;
+  const v = verdictColor[finding.verdict];
+  return (
+    <View style={[styles.row, !first && styles.rowDivider]}>
+      <View style={styles.rowHead}>
+        <Text style={[type.bodyStrong, styles.flex]}>{finding.ingredientText}</Text>
+        <Text style={[styles.rowVerdict, { color: v.fg }]}>{v.label}</Text>
+      </View>
+      {finding.rationales.map((r) => (
+        <Text key={r} style={type.body}>
+          {r}
+        </Text>
+      ))}
+      {finding.origin ? <Text style={type.small}>The label says it comes from: {finding.origin.replace(/_/g, ' ')}.</Text> : null}
+      {finding.contested.map((c) => (
+        <Text key={c} style={type.small}>
+          Other views: {c}
+        </Text>
+      ))}
+      {finding.refs.map((id) => {
         const ref = refs[id];
         return ref ? (
-          <Text key={id} style={styles.link} accessibilityRole="link" onPress={() => Linking.openURL(ref.url)}>
-            {ref.title}
-          </Text>
+          <Pressable key={id} onPress={() => Linking.openURL(ref.url)} accessibilityRole="link" style={styles.source} hitSlop={4}>
+            <Text style={styles.sourceText}>{ref.title}</Text>
+          </Pressable>
         ) : null;
       })}
     </View>
   );
 }
 
-function Collapsible({ title, items }: { title: string; items: string[] }) {
+function Collapsible({ title, items, first }: { title: string; items: string[]; first?: boolean }) {
   const [open, setOpen] = useState(false);
   if (items.length === 0) return null;
   return (
-    <View style={styles.card}>
-      <Pressable onPress={() => setOpen(!open)} accessibilityRole="button" accessibilityState={{ expanded: open }}>
-        <Text style={styles.cardTitle}>
-          {open ? '▾' : '▸'} {title} ({items.length})
+    <View style={[styles.collapsible, !first && styles.rowDivider]}>
+      <Pressable
+        onPress={() => setOpen(!open)}
+        accessibilityRole="button"
+        accessibilityState={{ expanded: open }}
+        accessibilityLabel={`${title}, ${items.length}`}
+        style={styles.collapsibleHead}
+      >
+        <Text style={[type.bodyStrong, styles.flex]}>{title}</Text>
+        <Text style={type.small}>
+          {items.length} {open ? '▴' : '▾'}
         </Text>
       </Pressable>
-      {open ? <Text style={styles.body}>{items.join(', ')}</Text> : null}
+      {open ? <Text style={[type.body, styles.collapsibleBody]}>{items.join(', ')}</Text> : null}
     </View>
   );
 }
 
-/** Everything below the product header: verdict, why, what was assumed, and the disclaimer. */
-export function ResultView({ result }: { result: Result }) {
-  const flagged = result.reasons.filter((r) => r.verdict !== 'halal');
-  const upgraded = result.reasons.filter((r) => r.verdict === 'halal');
+/** Everything below the product header: verdict, the marked-up label, why, what was assumed, and the disclaimer. */
+export function ResultView({ result, ingredientsText }: { result: Result; ingredientsText?: string | null }) {
+  const flagged = useMemo(() => group(result.reasons.filter((r) => r.verdict !== 'halal')), [result]);
+  const upgraded = useMemo(() => group(result.reasons.filter((r) => r.verdict === 'halal')), [result]);
+  const hasExtras = result.assumedHalal.length + result.notChecked.length > 0;
   return (
     <View style={styles.container}>
-      <VerdictBadge result={result} />
+      <VerdictPanel result={result} />
+
       {result.correction ? (
-        <View style={[styles.card, styles.correction]}>
-          <Text style={styles.cardTitle}>Reviewed after a report</Text>
-          <Text style={styles.body}>{result.correction.note}</Text>
+        <View style={[styles.sheet, styles.correction]}>
+          <Text style={type.bodyStrong}>Reviewed after a report</Text>
+          <Text style={type.body}>{result.correction.note}</Text>
           {result.correction.issue ? (
-            <Text style={styles.link} accessibilityRole="link" onPress={() => Linking.openURL(result.correction!.issue!)}>
-              See the report
-            </Text>
+            <Pressable onPress={() => Linking.openURL(result.correction!.issue!)} accessibilityRole="link" style={styles.source}>
+              <Text style={styles.sourceText}>See the report</Text>
+            </Pressable>
           ) : null}
-          <Text style={styles.note}>The ingredient check below is shown for reference; this review replaces its verdict.</Text>
+          <Text style={type.small}>This review replaces the ingredient check below.</Text>
         </View>
       ) : null}
 
+      {ingredientsText ? <AnnotatedIngredients text={ingredientsText} reasons={result.reasons} /> : null}
+
       {flagged.length > 0 ? (
-        <>
-          <Text style={styles.section}>{result.certified ? 'Would otherwise be flagged' : 'Why'}</Text>
-          {flagged.map((r, i) => (
-            <ReasonCard key={`f${i}`} reason={r} />
-          ))}
-        </>
+        <View style={styles.section}>
+          <Text style={type.heading}>{result.certified ? 'Would otherwise be flagged' : 'Why'}</Text>
+          <View style={styles.sheet}>
+            {flagged.map((f, i) => (
+              <FindingRow key={f.ingredientText} finding={f} first={i === 0} />
+            ))}
+          </View>
+        </View>
       ) : null}
-      {upgraded.map((r, i) => (
-        <ReasonCard key={`u${i}`} reason={r} />
-      ))}
 
-      <Collapsible title="Assumed halal" items={result.assumedHalal} />
-      <Collapsible title="Not checked (plain foods we don't list)" items={result.notChecked} />
+      {upgraded.length > 0 ? (
+        <View style={styles.section}>
+          <Text style={type.heading}>Counted as halal because of the vegan label</Text>
+          <View style={styles.sheet}>
+            {upgraded.map((f, i) => (
+              <FindingRow key={f.ingredientText} finding={f} first={i === 0} />
+            ))}
+          </View>
+        </View>
+      ) : null}
 
-      <Text style={styles.disclaimer}>{DISCLAIMER}</Text>
+      {hasExtras ? (
+        <View style={styles.collapsibles}>
+          <Collapsible title="Assumed halal" items={result.assumedHalal} first />
+          <Collapsible title="Plain foods we don't list" items={result.notChecked} first={result.assumedHalal.length === 0} />
+        </View>
+      ) : null}
+
+      <Text style={[type.small, styles.disclaimer]}>{DISCLAIMER}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { gap: 12 },
-  badge: { borderRadius: 14, paddingVertical: 18, paddingHorizontal: 16, alignItems: 'center' },
-  badgeText: { color: '#fff', fontSize: 30, fontWeight: '800' },
-  badgeSub: { color: '#fff', fontSize: 14, marginTop: 6, textAlign: 'center' },
-  section: { fontSize: 18, fontWeight: '700', marginTop: 4 },
-  card: { borderWidth: 1, borderColor: '#e6e6e6', borderRadius: 12, padding: 12, gap: 6 },
-  correction: { borderColor: '#1a5fb4', backgroundColor: '#eef4fb' },
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 },
-  cardTitle: { fontSize: 16, fontWeight: '600', flexShrink: 1 },
-  pill: { color: '#fff', fontSize: 12, fontWeight: '700', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, overflow: 'hidden' },
-  body: { fontSize: 15, color: '#444' },
-  note: { fontSize: 13, color: '#666' },
-  link: { fontSize: 13, color: '#1a5fb4', textDecorationLine: 'underline' },
-  disclaimer: { fontSize: 12, color: '#777', textAlign: 'center', marginTop: 8 },
+  container: { gap: space.xl },
+  flex: { flex: 1 },
+  panel: { borderLeftWidth: 6, borderRadius: 4, paddingVertical: space.l, paddingHorizontal: space.l, gap: space.s },
+  verdictLong: { fontSize: 30, lineHeight: 36 },
+  section: { gap: space.s },
+  sheet: { backgroundColor: color.paper, borderRadius: 12, padding: space.l, gap: space.m },
+  correction: { borderWidth: 1.5, borderColor: color.pine },
+  ingredients: { fontFamily: font.regular, fontSize: 17, lineHeight: 30, color: color.ink },
+  marked: { fontFamily: font.bold },
+  markHaram: { textDecorationLine: 'line-through', textDecorationColor: verdictColor.haram.fg },
+  markDoubt: { textDecorationLine: 'underline', textDecorationStyle: 'dotted', textDecorationColor: verdictColor.mushbooh.fg },
+  legend: { flexDirection: 'row', flexWrap: 'wrap', gap: space.l, borderTopWidth: 1, borderTopColor: color.line, paddingTop: space.m },
+  legendItem: { flexDirection: 'row', alignItems: 'center', gap: space.s },
+  swatch: { fontFamily: font.bold, fontSize: 14, color: color.ink, paddingHorizontal: 2 },
+  row: { gap: space.s },
+  rowDivider: { borderTopWidth: 1, borderTopColor: color.line, paddingTop: space.m },
+  rowHead: { flexDirection: 'row', alignItems: 'baseline', gap: space.m },
+  rowVerdict: { fontFamily: font.bold, fontSize: 15 },
+  source: { minHeight: 32, justifyContent: 'center' },
+  sourceText: { fontFamily: font.medium, fontSize: 14, lineHeight: 20, color: color.pine, textDecorationLine: 'underline' },
+  collapsibles: { backgroundColor: color.paper, borderRadius: 12, paddingHorizontal: space.l },
+  collapsible: {},
+  collapsibleHead: { minHeight: TOUCH + 8, flexDirection: 'row', alignItems: 'center' },
+  collapsibleBody: { paddingBottom: space.l, color: color.inkMuted },
+  disclaimer: { paddingHorizontal: space.xs },
 });

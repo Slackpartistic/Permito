@@ -1,10 +1,18 @@
 import { useEffect, useState } from 'react';
 import { Stack } from 'expo-router';
+import {
+  AtkinsonHyperlegibleNext_400Regular,
+  AtkinsonHyperlegibleNext_500Medium,
+  AtkinsonHyperlegibleNext_700Bold,
+  AtkinsonHyperlegibleNext_800ExtraBold,
+  useFonts,
+} from '@expo-google-fonts/atkinson-hyperlegible-next';
 import { SQLiteProvider, useSQLiteContext } from 'expo-sqlite';
 import { StatusBar } from 'expo-status-bar';
 import { Welcome } from '@/components/Welcome';
 import { DISCLAIMER_VERSION } from '@/lib/copy';
 import { getSetting, migrate, setSetting } from '@/lib/db';
+import { headerOptions } from '@/theme';
 
 function App() {
   const db = useSQLiteContext();
@@ -28,7 +36,7 @@ function App() {
     );
   }
   return (
-    <Stack>
+    <Stack screenOptions={headerOptions}>
       <Stack.Screen name="index" options={{ title: 'Permito', headerShown: false }} />
       <Stack.Screen name="product/[barcode]" options={{ title: 'Result' }} />
       <Stack.Screen name="manual" options={{ title: 'Check ingredients' }} />
@@ -40,10 +48,18 @@ function App() {
 }
 
 export default function RootLayout() {
+  const [fontsLoaded, fontError] = useFonts({
+    AtkinsonHyperlegibleNext_400Regular,
+    AtkinsonHyperlegibleNext_500Medium,
+    AtkinsonHyperlegibleNext_700Bold,
+    AtkinsonHyperlegibleNext_800ExtraBold,
+  });
+  // If the fonts fail to load, carry on with the system font rather than a blank screen.
+  if (!fontsLoaded && !fontError) return null;
   return (
     <SQLiteProvider databaseName="halal-o.db" onInit={migrate}>
       <App />
-      <StatusBar style="auto" />
+      <StatusBar style="dark" />
     </SQLiteProvider>
   );
 }

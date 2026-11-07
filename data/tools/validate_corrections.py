@@ -3,7 +3,7 @@ import json, re, sys
 
 VERDICTS = {"halal", "haram", "mushbooh"}
 DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
-ISSUE = re.compile(r"^https://github\.com/Slackpartistic/Halal-O/issues/\d+$")
+ISSUE = re.compile(r"^https://github\.com/Slackpartistic/Permito/issues/\d+$")
 
 data = json.load(open(sys.argv[1], encoding="utf-8"))
 errors = []

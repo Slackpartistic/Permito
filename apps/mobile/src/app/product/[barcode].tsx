@@ -1,7 +1,9 @@
-import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Image, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { ResultView, VERDICT_STYLE } from '@/components/ResultView';
+import { Button, TextLink } from '@/components/ui';
 import { useProductLookup } from '@/lib/lookup';
+import { color, space, type } from '@/theme';
 
 export default function ProductScreen() {
   const { barcode } = useLocalSearchParams<{ barcode: string }>();
@@ -12,74 +14,62 @@ export default function ProductScreen() {
 
   if (state.status === 'loading') {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" />
+      <View style={styles.center} accessibilityLiveRegion="polite">
+        <ActivityIndicator size="large" color={color.pine} />
+        <Text style={type.small}>Looking up {barcode}</Text>
       </View>
     );
   }
-  if (state.status === 'not_found') {
+  if (state.status === 'not_found' || state.status === 'error') {
+    const missing = state.status === 'not_found';
     return (
-      <View style={styles.center}>
-        <Text style={styles.heading}>We don't have this product's ingredients</Text>
-        <Text style={styles.body}>Barcode {barcode} isn't in Open Food Facts yet. You can type the ingredients from the pack instead.</Text>
-        <Pressable style={styles.button} onPress={typeIngredients}>
-          <Text style={styles.buttonText}>Type the ingredients</Text>
-        </Pressable>
-        <Text style={styles.link} accessibilityRole="link" onPress={() => report({ problem: 'Product is missing' })}>
-          Send us this product
+      <ScrollView contentContainerStyle={styles.container}>
+        <Text style={type.title}>{missing ? "We don't have this product yet" : "Couldn't look this up"}</Text>
+        <Text style={type.body}>
+          {missing
+            ? `Barcode ${barcode} isn't in Open Food Facts. Type the ingredients from the pack and we'll check them the same way.`
+            : state.message}
         </Text>
-      </View>
-    );
-  }
-  if (state.status === 'error') {
-    return (
-      <View style={styles.center}>
-        <Text style={styles.heading}>Lookup failed</Text>
-        <Text style={styles.body}>{state.message}</Text>
-        <Pressable style={styles.button} onPress={typeIngredients}>
-          <Text style={styles.buttonText}>Type the ingredients</Text>
-        </Pressable>
-      </View>
+        <Button label="Type the ingredients" onPress={typeIngredients} />
+        {missing ? <TextLink onPress={() => report({ problem: 'Product is missing' })}>Send us this product</TextLink> : null}
+      </ScrollView>
     );
   }
 
   const { product, result, fromCache } = state;
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      {product.imageUrl ? <Image source={{ uri: product.imageUrl }} style={styles.image} resizeMode="contain" /> : null}
-      <Text style={styles.heading}>{product.name ?? `Barcode ${barcode}`}</Text>
-      {product.brand ? <Text style={styles.body}>{product.brand}</Text> : null}
+      <View style={styles.product}>
+        {product.imageUrl ? (
+          <Image source={{ uri: product.imageUrl }} style={styles.image} resizeMode="contain" accessibilityIgnoresInvertColors />
+        ) : null}
+        <View style={styles.productText}>
+          <Text style={type.heading}>{product.name ?? `Barcode ${barcode}`}</Text>
+          {product.brand ? <Text style={type.small}>{product.brand}</Text> : null}
+        </View>
+      </View>
 
-      <ResultView result={result} />
+      <ResultView result={result} ingredientsText={product.input.ingredientsText} />
 
-      {result.verdict === 'unknown' ? (
-        <Pressable style={styles.button} onPress={typeIngredients}>
-          <Text style={styles.buttonText}>Type the ingredients</Text>
-        </Pressable>
-      ) : null}
-      <Pressable
-        style={[styles.button, styles.secondary]}
-        onPress={() => report({ product: [product.name, product.brand].filter(Boolean).join(', ') || undefined, verdict: VERDICT_STYLE[result.verdict].label })}
-      >
-        <Text style={[styles.buttonText, styles.secondaryText]}>Report a problem</Text>
-      </Pressable>
-      <Text style={styles.meta}>
-        Product data from Open Food Facts{fromCache ? ' (saved on this phone)' : ''}. Barcode {barcode}.
+      {result.verdict === 'unknown' ? <Button label="Type the ingredients" onPress={typeIngredients} /> : null}
+      <Button
+        label="Report a problem"
+        variant="secondary"
+        onPress={() =>
+          report({ product: [product.name, product.brand].filter(Boolean).join(', ') || undefined, verdict: VERDICT_STYLE[result.verdict].label })
+        }
+      />
+      <Text style={type.small}>
+        Product data from Open Food Facts{fromCache ? ', saved on this phone' : ''}. Barcode {barcode}.
       </Text>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 16, gap: 12, backgroundColor: '#fff' },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 12, backgroundColor: '#fff' },
-  image: { width: '100%', height: 180 },
-  heading: { fontSize: 22, fontWeight: '700', textAlign: 'center' },
-  body: { fontSize: 15, color: '#444', textAlign: 'center' },
-  meta: { fontSize: 12, color: '#888', textAlign: 'center' },
-  button: { backgroundColor: '#1b7f4b', borderRadius: 10, paddingHorizontal: 18, paddingVertical: 14, alignItems: 'center' },
-  buttonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
-  secondary: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#1b7f4b' },
-  secondaryText: { color: '#1b7f4b' },
-  link: { color: '#1a5fb4', fontSize: 15, textAlign: 'center' },
+  container: { padding: space.l, paddingBottom: space.xxl, gap: space.l },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: space.m },
+  product: { flexDirection: 'row', alignItems: 'center', gap: space.m },
+  image: { width: 64, height: 64, borderRadius: 8, backgroundColor: color.paper },
+  productText: { flex: 1, gap: 2 },
 });
