@@ -2,6 +2,17 @@
 
 The app is built in the cloud with EAS, so you don't need a Mac.
 
+## Android test APK without any accounts
+
+GitHub can build an Android APK for you. You don't need an Expo account, and nothing gets installed on your computer.
+
+1. On GitHub, open **Actions → Android APK → Run workflow**, keep `main` selected, and press the green button.
+2. Wait about 15 to 25 minutes for the run to go green.
+3. On the repo's **Releases** page, open **Permito test build** and download the `.apk`. You can do this from the phone directly and send the link to testers. The file is also attached to the run under **Artifacts**, but downloading it from there needs a GitHub login.
+4. On the phone, open the file and allow installs from the browser or file manager when Android asks.
+
+Each run replaces the previous test build. The APK is signed with a debug key, so it works for testing but can't go to the Play Store. An APK installed this way can't be updated by a store build later; uninstall it first. iPhones can't install APKs; they need TestFlight (below).
+
 ## One-time setup (you)
 
 1. **Accounts.**
