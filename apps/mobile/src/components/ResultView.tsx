@@ -13,7 +13,7 @@ export const VERDICT_STYLE: Record<Verdict, { label: string; color: string }> = 
 
 
 function subtitle(result: Result): string | null {
-  if (result.correction) return `Checked by the Halal-O team on ${result.correction.reviewed}.`;
+  if (result.correction) return `Checked by the Permito team on ${result.correction.reviewed}.`;
   if (result.certified) return 'Halal label reported on pack. Check the logo is from a certifier you trust.';
   if (result.verdict === 'unknown') return "We couldn't find an ingredient list for this product.";
   if (result.verdict === 'halal' && result.confidence !== 'high') return 'Likely halal: check the label.';

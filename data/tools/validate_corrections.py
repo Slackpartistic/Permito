@@ -25,7 +25,7 @@ for code, c in data.get("corrections", {}).items():
     if "certified" in c and not isinstance(c["certified"], bool):
         errors.append(f"{code}: certified must be true or false")
     if "issue" in c and not ISSUE.match(str(c["issue"])):
-        errors.append(f"{code}: issue must link to a Halal-O GitHub issue")
+        errors.append(f"{code}: issue must link to a Permito GitHub issue")
     extra = set(c) - {"verdict", "certified", "note", "reviewed", "issue"}
     if extra:
         errors.append(f"{code}: unknown fields {sorted(extra)}")

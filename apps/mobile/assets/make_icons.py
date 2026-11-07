@@ -1,4 +1,4 @@
-"""Draws the Halal-O app icons. Run: python3 assets/make_icons.py (from apps/mobile)."""
+"""Draws the Permito app icons. Run: python3 assets/make_icons.py (from apps/mobile)."""
 from PIL import Image, ImageDraw
 
 GREEN = (27, 127, 75, 255)

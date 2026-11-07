@@ -1,20 +1,20 @@
 {
   "expo": {
-    "name": "Halal-O",
-    "slug": "halal-o",
+    "name": "Permito",
+    "slug": "permito",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.halalo.app",
+      "bundleIdentifier": "com.permito.app",
       "config": {
         "usesNonExemptEncryption": false
       }
     },
     "android": {
-      "package": "com.halalo.app",
+      "package": "com.permito.app",
       "adaptiveIcon": {
         "backgroundColor": "#1B7F4B",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -34,7 +34,7 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Halal-O uses the camera to scan product barcodes.",
+          "cameraPermission": "Permito uses the camera to scan product barcodes.",
           "microphonePermission": false,
           "recordAudioAndroid": false
         }
@@ -50,7 +50,7 @@
         }
       ]
     ],
-    "scheme": "halalo",
+    "scheme": "permito",
     "experiments": {
       "typedRoutes": true
     },

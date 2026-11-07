@@ -26,7 +26,7 @@ export default function ReportScreen() {
     try {
       await Linking.openURL(url);
     } catch {
-      Alert.alert(`Couldn't open ${what}`, 'You can also email halalo.support@gmail.com directly.');
+      Alert.alert(`Couldn't open ${what}`, 'You can also email permito.support@gmail.com directly.');
     }
   };
 

@@ -28,7 +28,7 @@ function fakeFetch(status: number, body: unknown) {
   return vi.fn(async () => new Response(JSON.stringify(body), { status }));
 }
 
-const UA = 'Halal-O/0.1 (halalo.support@gmail.com)';
+const UA = 'Permito/0.1 (permito.support@gmail.com)';
 
 describe('isValidBarcode', () => {
   it.each(['12345678', '012345678905', '5000159461122', '12345678901234'])('accepts %s', (b) => expect(isValidBarcode(b)).toBe(true));

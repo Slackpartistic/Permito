@@ -1,4 +1,4 @@
-# Releasing Halal-O to testers
+# Releasing Permito to testers
 
 The app is built in the cloud with EAS, so you don't need a Mac.
 
@@ -8,7 +8,7 @@ The app is built in the cloud with EAS, so you don't need a Mac.
    - An Expo account (free): https://expo.dev/signup
    - The Apple Developer Program (US$99 a year): https://developer.apple.com/programs/
    - A Google Play developer account (US$25 once): https://play.google.com/console/signup. New personal accounts must run a closed test with at least 12 testers for 14 days before going to production.
-2. **Create halalo.support@gmail.com.** The stores, the privacy policy and the report flow all use it.
+2. **Create permito.support@gmail.com.** The stores, the privacy policy and the report flow all use it.
 3. **Keep the repo public, or host the privacy policy elsewhere.** The stores need a public URL for `docs/PRIVACY.md`. If the repo becomes private, publish it with GitHub Pages and change `PRIVACY_URL` in `apps/mobile/src/lib/config.ts`.
 4. **Install the EAS CLI and link the project** (from `apps/mobile`):
    ```bash
@@ -36,16 +36,16 @@ eas build --platform android --profile production
 
 ## Store listing answers
 
-**App name:** Halal-O
+**App name:** Permito
 **Subtitle (iOS, 30 chars):** Halal ingredient scanner
 **Short description (Play, 80 chars):** Scan a food barcode to see if it's Halal, Haram or Mushbooh, and why.
 **Category:** Food & Drink
-**Bundle ID / package:** com.halalo.app
+**Bundle ID / package:** com.permito.app
 **Privacy policy URL:** https://github.com/Slackpartistic/Halal-O/blob/main/docs/PRIVACY.md
-**Support email:** halalo.support@gmail.com
+**Support email:** permito.support@gmail.com
 
 **Description:**
-> Halal-O checks the ingredients of packaged food. Scan a barcode, or type the ingredients from the pack, and get a clear verdict: Halal, Haram or Mushbooh (doubtful). Every verdict shows the ingredients behind it, with the reason and a link to the source.
+> Permito checks the ingredients of packaged food. Scan a barcode, or type the ingredients from the pack, and get a clear verdict: Halal, Haram or Mushbooh (doubtful). Every verdict shows the ingredients behind it, with the reason and a link to the source.
 >
 > • Rulings follow the Hanafi school, using a reviewed list of over 750 additives and ingredients, including E-numbers, emulsifiers, colourings and hidden animal or alcohol ingredients.
 > • A halal logo or vegan label on the pack is taken into account.
@@ -53,7 +53,7 @@ eas build --platform android --profile production
 > • Report a wrong verdict in a couple of taps; every report is reviewed by hand.
 > • No account, no ads, no tracking.
 >
-> Product data comes from Open Food Facts, the free open food database. Halal-O is a guide, not a fatwa or certification: when in doubt, check with the manufacturer, a recognised certifier or a scholar.
+> Product data comes from Open Food Facts, the free open food database. Permito is a guide, not a fatwa or certification: when in doubt, check with the manufacturer, a recognised certifier or a scholar.
 
 **Apple App Privacy:** "Data Not Collected". Product lookups go to Open Food Facts, not to us, and reports are sent by the user's own email or GitHub account.
 **Apple export compliance:** no non-exempt encryption (set in `app.json`).

@@ -14,8 +14,8 @@ export function Welcome({ onAccept }: { onAccept: () => void }) {
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.title}>Welcome to Halal-O</Text>
-        <Text style={styles.body}>Scan a food barcode and Halal-O checks its ingredients. Every product gets one of three verdicts:</Text>
+        <Text style={styles.title}>Welcome to Permito</Text>
+        <Text style={styles.body}>Scan a food barcode and Permito checks its ingredients. Every product gets one of three verdicts:</Text>
         {VERDICT_HELP.map((v) => (
           <View key={v.label} style={styles.row}>
             <Text style={[styles.pill, { backgroundColor: COLORS[v.label] }]}>{v.label}</Text>

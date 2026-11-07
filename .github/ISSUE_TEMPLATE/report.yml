@@ -6,7 +6,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for helping keep Halal-O accurate. Every report is reviewed by hand before anything changes.
+        Thanks for helping keep Permito accurate. Every report is reviewed by hand before anything changes.
         Photos of the ingredient list and of any halal logo help the most.
   - type: input
     id: barcode

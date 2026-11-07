@@ -1,4 +1,4 @@
-# Halal-O
+# Permito
 Mobile app utilizing the camera to scan the status from a database based on religious rulings.
 
 Scan a food or drink barcode (or type the ingredients) and get **Halal**, **Haram** or **Mushbooh**, with the ingredients behind the verdict and the source of each ruling. Rulings follow the Hanafi school and Mustakshif's method; see [`data/METHODOLOGY.md`](data/METHODOLOGY.md).

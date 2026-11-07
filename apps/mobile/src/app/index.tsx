@@ -36,7 +36,7 @@ export default function ScanScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Halal-O</Text>
+        <Text style={styles.title}>Permito</Text>
         <View style={styles.headerLinks}>
           <Text style={styles.headerLink} accessibilityRole="link" onPress={() => router.push('/history')}>
             History
@@ -60,13 +60,13 @@ export default function ScanScreen() {
           )
         ) : (
           <View style={styles.permission}>
-            <Text style={styles.permissionText}>Halal-O needs the camera to scan barcodes.</Text>
+            <Text style={styles.permissionText}>Permito needs the camera to scan barcodes.</Text>
             {permission.canAskAgain ? (
               <Pressable style={styles.button} onPress={requestPermission}>
                 <Text style={styles.buttonText}>Allow camera</Text>
               </Pressable>
             ) : (
-              <Text style={styles.permissionText}>Turn on camera access for Halal-O in Settings.</Text>
+              <Text style={styles.permissionText}>Turn on camera access for Permito in Settings.</Text>
             )}
           </View>
         )}

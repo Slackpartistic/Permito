@@ -1,4 +1,4 @@
-# Halal-O: product spec and architecture
+# Permito: product spec and architecture
 
 Version 1, 31 October 2026. This builds on the ingredient reference in `data/` (see `data/METHODOLOGY.md` for the rulings).
 
@@ -86,7 +86,7 @@ interface Result {
 | Source | Used for | Notes |
 |---|---|---|
 | Ingredient reference (ours) | The rulings | Bundled with the app, so it works offline. The app checks for a newer version at launch. |
-| [Open Food Facts](https://openfoodfacts.github.io/openfoodfacts-server/api/) | Barcode lookup: name, photo, ingredients, labels, additives | Free, about 3M products, UK coverage is good. **15 product reads per minute per IP**, which is fine since each phone calls the API itself. A custom User-Agent `Halal-O/<version> (halalo.support@gmail.com)` is required. Licence is ODbL, so we must credit it. |
+| [Open Food Facts](https://openfoodfacts.github.io/openfoodfacts-server/api/) | Barcode lookup: name, photo, ingredients, labels, additives | Free, about 3M products, UK coverage is good. **15 product reads per minute per IP**, which is fine since each phone calls the API itself. A custom User-Agent `Permito/<version> (permito.support@gmail.com)` is required. Licence is ODbL, so we must credit it. |
 | Corrections list (ours) | A verdict per barcode after a reviewed report | A small JSON file published with the reference. Its verdicts beat the engine's. |
 
 **Fallbacks considered and left out of the MVP:** UPCitemdb and GS1 lookups. They have poor ingredient data and cost money.
@@ -163,6 +163,6 @@ This shows on first launch and at the bottom of every result:
 > "This app checks ingredients against a reference list following Hanafi rulings. It is not a fatwa or certification. When a product is Mushbooh or you are unsure, check with the manufacturer, a recognised halal certifier, or a scholar."
 
 ## 9. Decisions made (31 Oct)
-- App name: **Halal-O**. Contact email for Open Food Facts: halalo.support@gmail.com (to be created before launch).
+- App name: **Permito** (renamed from Halal-O on 7 Nov 2026). Contact email for Open Food Facts: permito.support@gmail.com (to be created before launch).
 - Stack: Expo.
 - Repo: github.com/Slackpartistic/Halal-O.
