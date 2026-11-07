@@ -17,6 +17,18 @@ The app is built in the cloud with EAS, so you don't need a Mac.
    eas init          # writes the project ID into app.json; commit that change
    ```
 
+## Quick test build (any network, no store)
+
+Android testers can install an APK directly, from anywhere. From `apps/mobile`:
+
+```bash
+eas build --platform android --profile preview
+```
+
+When it finishes, EAS shows a link and a QR code. Send either to testers. They open it on their Android phone, allow "install unknown apps" if asked, and install. Each new build has to be installed again the same way.
+
+iPhones can't install apps this way. Use TestFlight (below), which needs the Apple Developer Program.
+
 ## Build and send to testers
 
 From `apps/mobile`:
