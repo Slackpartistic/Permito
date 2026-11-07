@@ -101,7 +101,7 @@ interface Result {
 
 ### 5.2 Repository layout
 ```
-halal-o/
+permito/
   apps/mobile/            Expo app (screens: Scan, Result, Manual, History, Report)
   packages/engine/        verdict engine (pure TS, no React), unit tests
   packages/off-client/    Open Food Facts client + response mapping
@@ -165,4 +165,4 @@ This shows on first launch and at the bottom of every result:
 ## 9. Decisions made (31 Oct)
 - App name: **Permito** (renamed from Halal-O on 7 Nov 2026). Contact email for Open Food Facts: permito.support@gmail.com (to be created before launch).
 - Stack: Expo.
-- Repo: github.com/Slackpartistic/Halal-O.
+- Repo: github.com/Slackpartistic/Permito.

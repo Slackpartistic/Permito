@@ -41,7 +41,7 @@ eas build --platform android --profile production
 **Short description (Play, 80 chars):** Scan a food barcode to see if it's Halal, Haram or Mushbooh, and why.
 **Category:** Food & Drink
 **Bundle ID / package:** com.permito.app
-**Privacy policy URL:** https://github.com/Slackpartistic/Halal-O/blob/main/docs/PRIVACY.md
+**Privacy policy URL:** https://github.com/Slackpartistic/Permito/blob/main/docs/PRIVACY.md
 **Support email:** permito.support@gmail.com
 
 **Description:**

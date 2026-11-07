@@ -16,7 +16,7 @@ const file: CorrectionsFile = {
   schema_version: 1,
   version: '2026-11-01',
   corrections: {
-    '5000000000001': { verdict: 'halal', note: 'Manufacturer confirmed the E471 is plant-based.', reviewed: '2026-11-01', issue: 'https://github.com/Slackpartistic/Halal-O/issues/1' },
+    '5000000000001': { verdict: 'halal', note: 'Manufacturer confirmed the E471 is plant-based.', reviewed: '2026-11-01', issue: 'https://github.com/Slackpartistic/Permito/issues/1' },
     '5000000000002': { verdict: 'haram', certified: true, note: 'Contains pork gelatine.', reviewed: '2026-11-01' },
   },
 };
@@ -27,7 +27,7 @@ describe('applyCorrection', () => {
     expect(r.verdict).toBe('halal');
     expect(r.confidence).toBe('high');
     expect(r.certified).toBe(false);
-    expect(r.correction).toEqual({ note: 'Manufacturer confirmed the E471 is plant-based.', reviewed: '2026-11-01', issue: 'https://github.com/Slackpartistic/Halal-O/issues/1' });
+    expect(r.correction).toEqual({ note: 'Manufacturer confirmed the E471 is plant-based.', reviewed: '2026-11-01', issue: 'https://github.com/Slackpartistic/Permito/issues/1' });
     expect(r.assumedHalal).toEqual(['sugar']);
   });
 

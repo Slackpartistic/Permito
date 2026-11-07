@@ -15,7 +15,7 @@ Reports arrive as GitHub issues labelled `report` (from the in-app "Report on Gi
      "certified": true,
      "note": "HMC-certified logo on pack (photo in report).",
      "reviewed": "2026-11-01",
-     "issue": "https://github.com/Slackpartistic/Halal-O/issues/12"
+     "issue": "https://github.com/Slackpartistic/Permito/issues/12"
    }
    ```
 
