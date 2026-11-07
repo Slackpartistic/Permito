@@ -51,7 +51,7 @@ export default function AboutScreen() {
       <Link url={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</Link>
 
       <Text style={styles.meta}>
-        Halal-O {APP_VERSION} · ingredient reference {getReference().generated} · corrections {getCorrections().version}
+        Permito {APP_VERSION} · ingredient reference {getReference().generated} · corrections {getCorrections().version}
       </Text>
     </ScrollView>
   );

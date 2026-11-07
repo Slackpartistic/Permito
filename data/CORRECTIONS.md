@@ -1,6 +1,6 @@
 # Handling a report
 
-Reports arrive as GitHub issues labelled `report` (from the in-app "Report on GitHub" button) or as emails to halalo.support@gmail.com.
+Reports arrive as GitHub issues labelled `report` (from the in-app "Report on GitHub" button) or as emails to permito.support@gmail.com.
 
 1. **Check the evidence.** Look at the photos of the ingredient list and any halal logo. If something is unclear, ask the reporter or the manufacturer.
 2. **Decide where the fix belongs.**

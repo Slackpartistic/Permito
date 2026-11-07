@@ -18,7 +18,7 @@ export interface Report {
 const MAX_INGREDIENTS = 1500;
 
 export function appInfo(): string {
-  return `Halal-O ${APP_VERSION}, reference ${getReference().generated}, corrections ${getCorrections().version}`;
+  return `Permito ${APP_VERSION}, reference ${getReference().generated}, corrections ${getCorrections().version}`;
 }
 
 function title(r: Report): string {
