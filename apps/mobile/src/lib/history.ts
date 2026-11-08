@@ -1,6 +1,6 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 import type { Result, Verdict } from '@halal-o/engine';
-import type { Product } from '@halal-o/off-client';
+import { PRODUCT_TTL_MS, type Product } from '@halal-o/off-client';
 import { evaluateProduct } from './engine';
 
 export const HISTORY_LIMIT = 100;
@@ -43,7 +43,8 @@ const toScan = (r: ScanRow): Scan => ({
 /**
  * Record a scan the user just looked at. Opening a product counts as seeing its
  * current verdict, so any "verdict changed" flag is cleared. Only the newest
- * HISTORY_LIMIT scans are kept.
+ * HISTORY_LIMIT scans are kept, and cached products that have expired and are no longer
+ * in history are deleted, so the database stays small.
  */
 export async function recordScan(db: SQLiteDatabase, product: Product, result: Result, now = Date.now()): Promise<void> {
   await db.runAsync(
@@ -62,6 +63,11 @@ export async function recordScan(db: SQLiteDatabase, product: Product, result: R
   await db.runAsync(
     `DELETE FROM scans WHERE barcode NOT IN (SELECT barcode FROM scans ORDER BY scanned_at DESC LIMIT ?)`,
     HISTORY_LIMIT,
+  );
+  // Expired cached products would be fetched again anyway; keep the ones history re-checks need.
+  await db.runAsync(
+    `DELETE FROM products WHERE saved_at < ? AND barcode NOT IN (SELECT barcode FROM scans)`,
+    now - PRODUCT_TTL_MS,
   );
 }
 
