@@ -1,15 +1,23 @@
 name: Android APK
 
 # Builds an installable Android APK on GitHub, with no Expo account.
-# Run it from the Actions tab ("Run workflow"). The APK is attached to the run
-# and, for manual runs, published as the "apk-preview" pre-release so testers
-# can download it from the Releases page.
+# Run it from the Actions tab ("Run workflow"); it also runs by itself when the
+# ingredient list or corrections change on main. The APK is attached to the run
+# and, except on PRs, published as the "apk-preview" pre-release so testers can
+# download it from the Releases page.
 #
 # The APK is signed with the React Native template's debug key: fine for
 # testing, not for the Play Store.
 
 on:
   workflow_dispatch:
+  # The ingredient list and corrections are bundled in the app, so a merged change
+  # to either only reaches phones through a new APK.
+  push:
+    branches: [main]
+    paths:
+      - data/ingredients.json
+      - data/corrections.json
   pull_request:
     paths:
       - .github/workflows/android-apk.yml
@@ -61,7 +69,7 @@ jobs:
           retention-days: 30
 
       - name: Publish as the apk-preview pre-release
-        if: github.event_name == 'workflow_dispatch'
+        if: github.event_name != 'pull_request'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
