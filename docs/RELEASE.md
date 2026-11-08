@@ -11,7 +11,7 @@ GitHub can build an Android APK for you. You don't need an Expo account, and not
 3. On the repo's **Releases** page, open **Permito test build** and download the `.apk`. You can do this from the phone directly and send the link to testers. The file is also attached to the run under **Artifacts**, but downloading it from there needs a GitHub login.
 4. On the phone, open the file and allow installs from the browser or file manager when Android asks.
 
-Each run replaces the previous test build. The APK is signed with a debug key, so it works for testing but can't go to the Play Store. An APK installed this way can't be updated by a store build later; uninstall it first. iPhones can't install APKs; they need TestFlight (below).
+The workflow also runs by itself whenever a change to `data/ingredients.json` or `data/corrections.json` is merged into main, such as the monthly reference PR. Each run replaces the previous test build. The APK is signed with a debug key, so it works for testing but can't go to the Play Store. An APK installed this way can't be updated by a store build later; uninstall it first. iPhones can't install APKs; they need TestFlight (below).
 
 ## One-time setup (you)
 
