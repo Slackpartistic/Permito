@@ -1,0 +1,73 @@
+name: Android APK
+
+# Builds an installable Android APK on GitHub, with no Expo account.
+# Run it from the Actions tab ("Run workflow"). The APK is attached to the run
+# and, for manual runs, published as the "apk-preview" pre-release so testers
+# can download it from the Releases page.
+#
+# The APK is signed with the React Native template's debug key: fine for
+# testing, not for the Play Store.
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - .github/workflows/android-apk.yml
+
+concurrency:
+  group: android-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: write
+    env:
+      GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx4g
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+      - run: npm ci
+
+      - name: Generate the Android project
+        working-directory: apps/mobile
+        run: npx expo prebuild --platform android --no-install
+
+      - name: Build the release APK
+        working-directory: apps/mobile/android
+        # arm64 and 32-bit ARM cover practically every phone and halve the build time.
+        run: ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=arm64-v8a,armeabi-v7a
+
+      - name: Name the APK
+        run: |
+          mkdir -p out
+          cp apps/mobile/android/app/build/outputs/apk/release/app-release.apk "out/permito-${GITHUB_SHA::7}.apk"
+          ls -lh out
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: permito-apk
+          path: out/*.apk
+          retention-days: 30
+
+      - name: Publish as the apk-preview pre-release
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete apk-preview --yes --cleanup-tag || true
+          gh release create apk-preview out/*.apk \
+            --prerelease \
+            --target "$GITHUB_SHA" \
+            --title "Permito test build (${GITHUB_SHA::7})" \
+            --notes "Android test build from ${GITHUB_REF_NAME}. Download the .apk on your phone and open it to install. You may need to allow installs from your browser."
